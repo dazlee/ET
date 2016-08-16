@@ -13,7 +13,6 @@ def GET(url):
 
 def getHtml(url):
     result = GET(url)
-    print result.status_code
     if result.status_code == 200:
         return result.text
     else:

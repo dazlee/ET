@@ -17,33 +17,33 @@ class MySQLClient(object):
     def create_tables(self):
         metadata.create_all(self.engine)
 
-    def commit_etf(self, etf):
+    def commit_etf(self, row):
         conn = self.engine.connect()
-        ticker = stock.get('ricker')
+        ticker = row.get('ticker')
         stmt = select([etf]).where(etf.c.ticker == ticker)
 
         if conn.execute(stmt).fetchone():
             updated_at = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
-            stmt = latest_stock_info.update().where(etf.c.ticker == ticker).values(\
-                name=etf.get('name'),\
-                issuer=etf.get('highest_price'),\
-                structure=etf.get('structure'),\
-                inception=etf.get('inception'),\
-                track=etf.get('track'),\
-                category=etf.get('inception'),\
-                asset_class=etf.get('asset_class'),\
-                asset_class_size=etf.get('asset_class_size'),\
-                asset_class_style=etf.get('asset_class_style'),\
-                sector_general=etf.get('sector_general'),\
-                sector_specific=etf.get('sector_specific'),\
-                region_general=etf.get('region_general'),\
-                region_specific=etf.get('region_specific'),\
-                asset_allocation=etf.get('asset_allocation'),\
-                sector_breakdown=etf.get('sector_breakdown'),\
-                market_cap_breakdown=etf.get('market_cap_breakdown'),\
-                region_breakdown=etf.get('region_breakdown'),\
-                market_tier_breakdown=etf.get('market_tier_breakdown'),\
-                country_breakdown=etf.get('country_breakdown'),\
+            stmt = etf.update().where(etf.c.ticker == ticker).values(\
+                name=row.get('name'),\
+                issuer=row.get('highest_price'),\
+                structure=row.get('structure'),\
+                inception=row.get('inception'),\
+                track=row.get('track'),\
+                category=row.get('inception'),\
+                asset_class=row.get('asset_class'),\
+                asset_class_size=row.get('asset_class_size'),\
+                asset_class_style=row.get('asset_class_style'),\
+                sector_general=row.get('sector_general'),\
+                sector_specific=row.get('sector_specific'),\
+                region_general=row.get('region_general'),\
+                region_specific=row.get('region_specific'),\
+                asset_allocation=row.get('asset_allocation'),\
+                sector_breakdown=row.get('sector_breakdown'),\
+                market_cap_breakdown=row.get('market_cap_breakdown'),\
+                region_breakdown=row.get('region_breakdown'),\
+                market_tier_breakdown=row.get('market_tier_breakdown'),\
+                country_breakdown=row.get('country_breakdown'),\
                 updated_at=updated_at\
             )
 
@@ -52,9 +52,9 @@ class MySQLClient(object):
             except Exception as e:
                 logger.error('Failed to update etf: %s, %s', e, etf)
         else:
-            etf.setdefault('created_at', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            row.setdefault('created_at', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime()))
             try:
-                conn.execute(etf.insert(), [etf])
+                conn.execute(etf.insert(), [row])
             except Exception as e:
                 logger.error('Failed to insert etf: %s, %s', e, etf)
 
@@ -62,7 +62,17 @@ class MySQLClient(object):
 
     def commit_history(self, rows):
         conn = self.engine.connect()
+        trans = conn.begin()
 
+        try:
+            conn.execute(etf_history.delete())
+            conn.execute(etf_history.insert(), rows)
+            trans.commit()
+        except Exception as e:
+            trans.rollback()
+            logger.error('Failed to insert etf history: %s', e)
+            raise
+        
         conn.close()
 
 
