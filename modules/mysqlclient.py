@@ -1,6 +1,7 @@
 from sqlalchemy import create_engine
 from sqlalchemy.sql import select, and_, or_, not_
 from tables import *
+import time
 
 from modules.logger import Logger
 
@@ -16,83 +17,53 @@ class MySQLClient(object):
     def create_tables(self):
         metadata.create_all(self.engine)
 
-    def commit_latest(self, stocks):
+    def commit_etf(self, etf):
         conn = self.engine.connect()
+        ticker = stock.get('ricker')
+        stmt = select([etf]).where(etf.c.ticker == ticker)
 
-        for stock in stocks:
-            if not stock.get('record_time'):
-                continue
+        if conn.execute(stmt).fetchone():
+            updated_at = time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            stmt = latest_stock_info.update().where(etf.c.ticker == ticker).values(\
+                name=etf.get('name'),\
+                issuer=etf.get('highest_price'),\
+                structure=etf.get('structure'),\
+                inception=etf.get('inception'),\
+                track=etf.get('track'),\
+                category=etf.get('inception'),\
+                asset_class=etf.get('asset_class'),\
+                asset_class_size=etf.get('asset_class_size'),\
+                asset_class_style=etf.get('asset_class_style'),\
+                sector_general=etf.get('sector_general'),\
+                sector_specific=etf.get('sector_specific'),\
+                region_general=etf.get('region_general'),\
+                region_specific=etf.get('region_specific'),\
+                asset_allocation=etf.get('asset_allocation'),\
+                sector_breakdown=etf.get('sector_breakdown'),\
+                market_cap_breakdown=etf.get('market_cap_breakdown'),\
+                region_breakdown=etf.get('region_breakdown'),\
+                market_tier_breakdown=etf.get('market_tier_breakdown'),\
+                country_breakdown=etf.get('country_breakdown'),\
+                updated_at=updated_at\
+            )
 
-            number = stock.get('number')
-            stmt = select([latest_stock_info]).where(latest_stock_info.c.number
-                                                     == number)
-
-            if conn.execute(stmt).fetchone():
-                stmt = latest_stock_info.update()\
-             .where(latest_stock_info.c.number == number)\
-             .values(latest_price=stock.get('latest_price'),\
-          highest_price=stock.get('highest_price'),\
-          lowest_price=stock.get('lowest_price'),\
-          opening_price=stock.get('opening_price'),\
-          limit_up=stock.get('limit_up'),\
-          limit_down=stock.get('limit_down'),\
-          yesterday_price=stock.get('yesterday_price'),\
-          temporal_volume=stock.get('temporal_volume'),\
-          volume=stock.get('volume'),\
-          top5_sold_prices=stock.get('top5_sold_prices'),\
-          top5_sold_count=stock.get('top5_sold_count'),\
-          top5_buy_prices=stock.get('top5_buy_prices'),\
-          top5_buy_count=stock.get('top5_buy_count'),\
-          record_time=stock.get('record_time'),\
-          updated_at=stock.get('updated_at'))
-                try:
-                    conn.execute(stmt)
-                except Exception as e:
-                    logger.error('Failed to update stock info: %s, %s', e,
-                                 stock)
-
-            else:
-                try:
-                    conn.execute(latest_stock_info.insert(), [stock])
-                except Exception as e:
-                    logger.error('Failed to insert stock info: %s, %s', e,
-                                 stock)
+            try:
+                conn.execute(stmt)
+            except Exception as e:
+                logger.error('Failed to update etf: %s, %s', e, etf)
+        else:
+            etf.setdefault('created_at', time.strftime('%Y-%m-%d %H:%M:%S', time.localtime())
+            try:
+                conn.execute(etf.insert(), [etf])
+            except Exception as e:
+                logger.error('Failed to insert etf: %s, %s', e, etf)
 
         conn.close()
 
-    def commit_history(self, stocks):
+    def commit_history(self, rows):
         conn = self.engine.connect()
-
-        for stock in stocks:
-            if not stock.get('record_time'):
-                continue
-
-            number = stock.get('number')
-            stmt = select([stock_history]).where(and_(\
-                stock_history.c.number == number,\
-                stock_history.c.record_time == stock.get('record_time')))
-
-            if not conn.execute(stmt).fetchone():
-                try:
-                    conn.execute(stock_history.insert(), [stock])
-                except Exception as e:
-                    logger.error('Failed to insert stock info: %s, %s', e, stock)
 
         conn.close()
 
-    def commit_news(self, news):
-        conn = self.engine.connect()
-
-        for new in news:
-            title = new.get('title')
-            stmt = select([latest_news]).where(latest_news.c.title == title)
-
-            if not conn.execute(stmt).fetchone():
-                try:
-                    conn.execute(latest_news.insert(), [new])
-                except Exception as e:
-                    logger.error('Failed to insert news: %s, %s', e, new)
-        
-        conn.close()
 
         

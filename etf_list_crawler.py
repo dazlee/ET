@@ -4,13 +4,16 @@ import time
 import re
 import pprint
 import csv
+import ConfigParser
 
 from bs4 import BeautifulSoup
 from modules.html import getHtml
 from modules.my_math import p2f
 from modules.logger import Logger
+from modules.config_reader import ConfigReader
+from modules.mysqlclient import MySQLClient
 
-CONF_FILE_PATH = 'config/stock.conf'
+CONF_FILE_PATH = 'config/etf.conf'
 PATTERN = '(\([a-zA-Z0-9-.]+\))';
 
 ETF_INFO_KEYS = {
@@ -173,3 +176,8 @@ if __name__ == '__main__':
         #         print headerMap[index] + " " + data
         # ---------------
         # TODO saving history into db
+
+    conf = ConfigReader(ConfigParser.ConfigParser(), CONF_FILE_PATH)
+    db = MySQLClient(conf.user, conf.password, conf.host, conf.dbname)
+    db.create_tables()
+    db.commit_etf(etf_data)

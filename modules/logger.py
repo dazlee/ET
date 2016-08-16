@@ -1,7 +1,7 @@
 import logging
 import logging.config
 
-CONF_FILE_PATH = 'config/stock.conf'
+CONF_FILE_PATH = 'config/etf.conf'
 
 class Logger(object):
     __instance = None
