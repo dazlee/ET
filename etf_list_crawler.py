@@ -104,7 +104,6 @@ def extractETFInfoFromETFDB(html):
     return metadata
 
 def parseHistory(historyCSV):
-    name = ""
     data = []
     reader = csv.reader(historyCSV, delimiter=",")
     header = reader.next()
@@ -113,16 +112,12 @@ def parseHistory(historyCSV):
 
 def getETFHistory(ticker):
     history = getHtml("http://chart.finance.yahoo.com/table.csv?a=0&b=1&c=1992&d=7&e=22&f=2016&g=d&ignore=.csv&s=" + ticker)
-    # header = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Adj Close']
     header, rows = parseHistory(history.split("\n"))
-    header_map = {}
+    headerMap = {}
     for index, column in enumerate(header):
         if column in ETF_HISTORY_KEYS:
-            header_map[index] = ETF_HISTORY_KEYS[column]
-    # header_map = {'0' : 'Date', '1': 'open' .....}
-    for row in rows:
-        for index, data in enumerate(row):
-            print header_map[index] + " " + data
+            headerMap[index] = ETF_HISTORY_KEYS[column]
+    return (headerMap, rows)
 
 
 if __name__ == '__main__':
@@ -131,9 +126,46 @@ if __name__ == '__main__':
     # html = getHtml("http://etf.stock-encyclopedia.com/category/us-etfs.html");
     etfs = ['XLE']#extractETFList(html)
     for etf in etfs:
-        # html = getHtml("http://etfdb.com/etf/" + etf)
-        # should save data into db
-        # ETFData = extractETFInfoFromETFDB(html)
-        # pprint.pprint(ETFData)
+        html = getHtml("http://etfdb.com/etf/" + etf)
+        etf_data = extractETFInfoFromETFDB(html)
+        # ETFData format:
+        # {
+        #      'asset_allocation': u'U.S. Stocks::0.989;;International Stocks::0.0031;;U.S. Bonds::0.0;;International Bonds::0.0;;Preferred Stock::0.0;;Convertibles::0.0;;Cash::0.0079;;Other::0.0',
+        #      'asset_class': u'Equity',
+        #      'category': u'Energy Equities',
+        #      'country_breakdown': u'United States::0.989;;Switzerland::0.0031;;Other::0.0079',
+        #      'expense_ratio': u'0.15%',
+        #      'inception': u'Dec 16, 1998',
+        #      'issuer': u'State Street SPDR',
+        #      'market_cap_breakdown': u'Giant::0.4268;;Large::0.3903;;Medium::0.1705;;Small::0.0044;;Micro::0.0',
+        #      'market_tier_breakdown': u'Developed::0.9921;;Emerging::0.0',
+        #      'region_breakdown': u'U.S.::0.989;;Middle East::0.0;;Australia::0.0;;Japan::0.0;;Asia (Developed)::0.0;;Africa::0.0;;Europe::0.0;;Latin America::0.0;;Canada::0.0;;Asia (Emerging)::0.0',
+        #      'region_general': u'North America',
+        #      'region_specific': u'U.S.',
+        #      'sector_breakdown': u'Energy::0.9921;;Financial Services::0.0;;Communication Services::0.0;;Consumer Defensive::0.0;;Real Estate::0.0;;Industrials::0.0;;Consumer Cyclical::0.0;;Basic Materials::0.0;;Technology::0.0;;Health Care::0.0;;Utilities::0.0',
+        #      'sector_general': u'Energy',
+        #      'sector_specific': u'Broad',
+        #      'structure': u'ETF',
+        #      'track': u'Energy Select Sector Index'
+        # }
+        # TODO should save to etf db
+
         # get etf history
-        ETFHistory = getETFHistory(etf)
+        headerMap, rows = getETFHistory(etf)
+        # headerMap = {
+        #      0: 'date',
+        #      1: 'open',
+        #      2: 'high',
+        #      3: 'low',
+        #      4: 'close',
+        #      5: 'volume',
+        #      6: 'adj_close'
+        # }
+        # rows = [['1998-12-22', '23.3125', '23.390619', '23.1875', '23.265619', '15200', '17.099304'], ....]
+        # you can uncomment to see data structure
+        # ---------------
+        # for row in rows:
+        #     for index, data in enumerate(row):
+        #         print headerMap[index] + " " + data
+        # ---------------
+        # TODO saving history into db
