@@ -3,6 +3,8 @@ import sys
 import time
 import re
 import pprint
+import csv
+
 from bs4 import BeautifulSoup
 from modules.html import getHtml
 from modules.my_math import p2f
@@ -31,6 +33,16 @@ ETF_INFO_KEYS = {
     "Region Breakdown": "region_breakdown",
     "Market Tier Breakdown": "market_tier_breakdown",
     "Country Breakdown": "country_breakdown"
+}
+
+ETF_HISTORY_KEYS = {
+    'Date': 'date',
+    'Open': 'open',
+    'High': 'high',
+    'Low': 'low',
+    'Close': 'close',
+    'Volume': 'volume',
+    'Adj Close': 'adj_close'
 }
 
 def extractETFList(html):
@@ -91,12 +103,37 @@ def extractETFInfoFromETFDB(html):
     metadata.update(combinations)
     return metadata
 
+def parseHistory(historyCSV):
+    name = ""
+    data = []
+    reader = csv.reader(historyCSV, delimiter=",")
+    header = reader.next()
+    data = [row for row in reader]
+    return (header, data)
+
+def getETFHistory(ticker):
+    history = getHtml("http://chart.finance.yahoo.com/table.csv?a=0&b=1&c=1992&d=7&e=22&f=2016&g=d&ignore=.csv&s=" + ticker)
+    # header = ['Date', 'Open', 'High', 'Low', 'Close', 'Volume', 'Adj Close']
+    header, rows = parseHistory(history.split("\n"))
+    header_map = {}
+    for index, column in enumerate(header):
+        if column in ETF_HISTORY_KEYS:
+            header_map[index] = ETF_HISTORY_KEYS[column]
+    # header_map = {'0' : 'Date', '1': 'open' .....}
+    for row in rows:
+        for index, data in enumerate(row):
+            print header_map[index] + " " + data
+
+
 if __name__ == '__main__':
     # log = Logger.get_instance()
     # log.info('------------------ ETF WORKER START ------------------')
     # html = getHtml("http://etf.stock-encyclopedia.com/category/us-etfs.html");
     etfs = ['XLE']#extractETFList(html)
     for etf in etfs:
-        html = getHtml("http://etfdb.com/etf/" + etf)
-        data = extractETFInfoFromETFDB(html)
-        pprint.pprint(data)
+        # html = getHtml("http://etfdb.com/etf/" + etf)
+        # should save data into db
+        # ETFData = extractETFInfoFromETFDB(html)
+        # pprint.pprint(ETFData)
+        # get etf history
+        ETFHistory = getETFHistory(etf)

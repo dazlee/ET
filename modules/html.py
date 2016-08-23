@@ -13,5 +13,4 @@ def GET(url):
 
 def getHtml(url):
     result = GET(url)
-
     return result.text
