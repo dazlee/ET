@@ -103,6 +103,11 @@ def extractETFInfoFromETFDB(html):
     metadata.update(combinations)
     return metadata
 
+def getETFInfo(etf):
+    html = getHtml("http://etfdb.com/etf/" + etf)
+    etf_data = extractETFInfoFromETFDB(html)
+    return etf_data
+
 def parseHistory(historyCSV):
     data = []
     reader = csv.reader(historyCSV, delimiter=",")
@@ -124,10 +129,9 @@ if __name__ == '__main__':
     # log = Logger.get_instance()
     # log.info('------------------ ETF WORKER START ------------------')
     # html = getHtml("http://etf.stock-encyclopedia.com/category/us-etfs.html");
-    etfs = ['XLE']#extractETFList(html)
+    etfs = ['SPY']#extractETFList(html)
     for etf in etfs:
-        html = getHtml("http://etfdb.com/etf/" + etf)
-        etf_data = extractETFInfoFromETFDB(html)
+        etf_data = getETFInfo(etf)
         # ETFData format:
         # {
         #      'asset_allocation': u'U.S. Stocks::0.989;;International Stocks::0.0031;;U.S. Bonds::0.0;;International Bonds::0.0;;Preferred Stock::0.0;;Convertibles::0.0;;Cash::0.0079;;Other::0.0',
