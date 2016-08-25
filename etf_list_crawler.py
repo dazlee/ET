@@ -60,8 +60,15 @@ def extractETFList(html):
 
 def extractETFMetaData(html):
     soup = BeautifulSoup(html)
-    uls = soup("ul", {"class": "list-unstyled"})
     results = {}
+
+    heading = soup("div", {"class": "social-share-heading-container"})
+    if len(heading) > 0:
+        title = heading[0]("h1", {"class": "data-title"})
+        if len(title) > 0:
+            results['name'] = title[0]("span")[1].text
+
+    uls = soup("ul", {"class": "list-unstyled"})
     for ul in uls:
         lis = ul("li")
         for li in lis:
@@ -106,6 +113,7 @@ def extractETFInfoFromETFDB(html):
 def getETFInfo(etf):
     html = getHtml("http://etfdb.com/etf/" + etf)
     etf_data = extractETFInfoFromETFDB(html)
+    etf_data['ticker'] = etf
     return etf_data
 
 def parseHistory(historyCSV):
@@ -122,7 +130,17 @@ def getETFHistory(ticker):
     for index, column in enumerate(header):
         if column in ETF_HISTORY_KEYS:
             headerMap[index] = ETF_HISTORY_KEYS[column]
-    return (headerMap, rows)
+
+    results = []
+    for row in rows:
+        result = {
+            'ticker': ticker
+        }
+        if len(row) > 0:
+            for index, columnKey in headerMap.items():
+                result[columnKey] = row[index]
+            results.append(result)
+    return results
 
 
 if __name__ == '__main__':
@@ -132,44 +150,45 @@ if __name__ == '__main__':
     etfs = ['SPY']#extractETFList(html)
     for etf in etfs:
         etf_data = getETFInfo(etf)
-        # ETFData format:
+        pprint.pprint(etf_data)
+        # ETFData example format:
         # {
-        #      'asset_allocation': u'U.S. Stocks::0.989;;International Stocks::0.0031;;U.S. Bonds::0.0;;International Bonds::0.0;;Preferred Stock::0.0;;Convertibles::0.0;;Cash::0.0079;;Other::0.0',
+        #      'asset_allocation': u'U.S. Stocks::0.9874;;International Stocks::0.0058;;U.S. Bonds::0.0;;International Bonds::0.0;;Preferred Stock::0.0;;Convertibles::0.0;;Cash::0.0068;;Other::0.0',
         #      'asset_class': u'Equity',
-        #      'category': u'Energy Equities',
-        #      'country_breakdown': u'United States::0.989;;Switzerland::0.0031;;Other::0.0079',
-        #      'expense_ratio': u'0.15%',
-        #      'inception': u'Dec 16, 1998',
+        #      'asset_class_size': u'Large-Cap',
+        #      'asset_class_style': u'Blend',
+        #      'category': u'Large Cap Blend Equities',
+        #      'country_breakdown': u'United States::0.9874;;Switzerland::0.0035;;United Kingdom::0.0019;;Singapore::0.0004;;Other::0.0068',
+        #      'expense_ratio': u'0.09%',
+        #      'inception': u'Jan 22, 1993',
         #      'issuer': u'State Street SPDR',
-        #      'market_cap_breakdown': u'Giant::0.4268;;Large::0.3903;;Medium::0.1705;;Small::0.0044;;Micro::0.0',
-        #      'market_tier_breakdown': u'Developed::0.9921;;Emerging::0.0',
-        #      'region_breakdown': u'U.S.::0.989;;Middle East::0.0;;Australia::0.0;;Japan::0.0;;Asia (Developed)::0.0;;Africa::0.0;;Europe::0.0;;Latin America::0.0;;Canada::0.0;;Asia (Emerging)::0.0',
+        #      'market_cap_breakdown': u'Giant::0.4952;;Large::0.3523;;Medium::0.1302;;Small::0.0016;;Micro::0.0',
+        #      'market_tier_breakdown': u'Developed::0.9932;;Emerging::0.0',
+        #      'name': u'SPDR S&P 500 ETF',
+        #      'region_breakdown': u'U.S.::0.9874;;Europe::0.0019;;Asia (Developed)::0.0004;;Middle East::0.0;;Japan::0.0;;Africa::0.0;;Australia::0.0;;Latin America::0.0;;Canada::0.0;;Asia (Emerging)::0.0',
         #      'region_general': u'North America',
         #      'region_specific': u'U.S.',
-        #      'sector_breakdown': u'Energy::0.9921;;Financial Services::0.0;;Communication Services::0.0;;Consumer Defensive::0.0;;Real Estate::0.0;;Industrials::0.0;;Consumer Cyclical::0.0;;Basic Materials::0.0;;Technology::0.0;;Health Care::0.0;;Utilities::0.0',
         #      'sector_general': u'Energy',
         #      'sector_specific': u'Broad',
-        #      'structure': u'ETF',
-        #      'track': u'Energy Select Sector Index'
+        #      'sector_breakdown': u'Technology::0.1754;;Health Care::0.1521;;Financial Services::0.1345;;Consumer Cyclical::0.1094;;Industrials::0.1091;;Consumer Defensive::0.1065;;Energy::0.0722;;Communication Services::0.0448;;Utilities::0.0361;;Basic Materials::0.0269;;Real Estate::0.0263',
+        #      'structure': u'UIT',
+        #      'ticker': 'SPY',
+        #      'track': u'S&P 500 Index'
         # }
         # TODO should save to etf db
 
         # get etf history
-        headerMap, rows = getETFHistory(etf)
-        # headerMap = {
-        #      0: 'date',
-        #      1: 'open',
-        #      2: 'high',
-        #      3: 'low',
-        #      4: 'close',
-        #      5: 'volume',
-        #      6: 'adj_close'
-        # }
-        # rows = [['1998-12-22', '23.3125', '23.390619', '23.1875', '23.265619', '15200', '17.099304'], ....]
-        # you can uncomment to see data structure
-        # ---------------
-        # for row in rows:
-        #     for index, data in enumerate(row):
-        #         print headerMap[index] + " " + data
-        # ---------------
+        results = getETFHistory(etf)
+        # results = [
+        #     {
+        #          'volume': '1003200',
+        #          'ticker': 'SPY',
+        #          'adj_close': '28.308155',
+        #          'high': '43.9687',
+        #          'low': '43.75',
+        #          'date': '1993-01-29',
+        #          'close': '43.9375',
+        #          'open': '43.9687'
+        #      },....
+        # ]
         # TODO saving history into db
